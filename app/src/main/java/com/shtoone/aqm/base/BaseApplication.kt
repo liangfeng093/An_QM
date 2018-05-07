@@ -5,9 +5,10 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.support.multidex.MultiDex
 import android.text.TextUtils
+import com.shtoone.aqm.network.RetrofitManager
 import com.tencent.bugly.Bugly
 import com.tencent.bugly.crashreport.CrashReport
-import com.tencent.tinker.loader.shareutil.ShareTinkerInternals.getProcessName
+import com.vondear.rxtools.RxLogTool
 import com.vondear.rxtools.RxTool
 import devliving.online.securedpreferencestore.RecoveryHandler
 import devliving.online.securedpreferencestore.SecuredPreferenceStore
@@ -60,12 +61,19 @@ class BaseApplication : Application() {
         var gpsDistance: Int = 0
         /*******  后台配置  end     *******/
 
+        var sn = "AQMNo4"//和username的数字一致
+
+
         var prefStore: SecuredPreferenceStore? = null
 
     }
 
     override fun onCreate() {
         super.onCreate()
+
+        RetrofitManager.getInstance()//初始化
+
+
         val context = applicationContext
         // 获取当前包名
         val packageName = context.packageName
@@ -84,6 +92,10 @@ class BaseApplication : Application() {
             }
         })
         prefStore = SecuredPreferenceStore.getSharedInstance()
+
+
+        RxLogTool.init(this)
+
 
     }
 
