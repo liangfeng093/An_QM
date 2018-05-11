@@ -16,5 +16,5 @@ class ChunkBody {
     /**
      * 大文件的文件名 uuid
      */
-    var fileName = ""
+    var uuid = ""
 }

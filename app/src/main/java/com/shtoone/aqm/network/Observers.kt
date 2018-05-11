@@ -1,7 +1,9 @@
 package com.shtoone.aqm.network
 
 import android.util.Log
-import com.shtoone.aqm.features.login.LoginBean
+import com.shtoone.aqm.base.BaseObject
+import com.shtoone.aqm.features.bigfileupload.UploadChunkFileResponse
+import com.shtoone.aqm.features.location.UploadLocationResponse
 import com.shtoone.aqm.features.login.LoginResponse
 import io.reactivex.Observer
 import io.reactivex.disposables.Disposable
@@ -32,6 +34,7 @@ open class Observers {
     }
 
     open class LoginObserver : BaseObserver<LoginResponse>() {}
-    open class UploadChunkFileObserver : BaseObserver<LoginResponse>() {}
+    open class UploadChunkFileObserver : BaseObserver<UploadChunkFileResponse>() {}
+    open class LocationObserver : BaseObserver<UploadLocationResponse>() {}
 
 }

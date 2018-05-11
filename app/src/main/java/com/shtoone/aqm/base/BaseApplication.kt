@@ -66,7 +66,9 @@ class BaseApplication : LitePalApplication() {
 
         var sn = "AQMNo4"//和username的数字一致
         var key = ""
-        var username = ""
+        var userName = ""
+        var latitude = ""//纬度，纬度取值最大是90
+        var longitude = ""//经度，经度取值最大是180
 
         var prefStore: SecuredPreferenceStore? = null
 

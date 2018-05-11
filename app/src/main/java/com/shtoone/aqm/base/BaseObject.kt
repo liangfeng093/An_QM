@@ -12,6 +12,11 @@ open class BaseObject<T> {
     var success: String = ""
     var msg: String = ""
     override fun toString(): String {
-        return "BaseObject(obj=$obj)"
+        return "BaseObject(success=$success, $obj='$$obj')"
+//        return "BaseObject(obj=$obj, success='$success')"
     }
+
+    /*override fun toString(): String {
+        return "BaseObject(obj=$obj)"
+    }*/
 }

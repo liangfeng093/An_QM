@@ -1,7 +1,9 @@
 package com.shtoone.aqm.network
 
-import com.shtoone.aqm.features.bigfileupload.ChunkBody
-import com.shtoone.aqm.features.login.LoginBean
+import com.shtoone.aqm.base.BaseObject
+import com.shtoone.aqm.features.bigfileupload.UploadChunkFileResponse
+import com.shtoone.aqm.features.location.UploadLocation
+import com.shtoone.aqm.features.location.UploadLocationResponse
 import com.shtoone.aqm.features.login.LoginResponse
 import io.reactivex.Observable
 import okhttp3.MultipartBody
@@ -15,7 +17,7 @@ interface RetrofitService {
 
     companion object {
 
-        //        val BaseURL: String = "http://114.55.108.58:8086/SSMS/"//新外网
+//                                val BaseURL: String = "http://114.55.108.58:8086/SSMS/"//新外网
         val BaseURL: String = "http://192.168.0.158:8080/jeecg/"//luo
         val mp3Url = BaseURL + "Callupload/"
     }
@@ -34,7 +36,15 @@ interface RetrofitService {
     @Multipart
     @POST("/jeecg/rest/app/SystemController/videoMerge/upload/{amqSN}")
 //    @POST("SSMSTeamCallRecordController/videoMerge/upload/{key}")
-    fun uploadChunkFile(@Path("amqSN") key: String, @Part partList: List<MultipartBody.Part>): Observable<LoginResponse>
+    fun uploadChunkFile(@Path("amqSN") key: String, @Part partList: List<MultipartBody.Part>): Observable<UploadChunkFileResponse>
+//    fun uploadChunkFile(@Path("amqSN") key: String, @Part partList: List<MultipartBody.Part>): Observable<BaseObject<String>>
 //    fun uploadChunkFile(body: ChunkBody): Observable<LoginResponse>
+
+
+    /**
+     * 上传定位信息
+     */
+    @POST("rest/app/SystemController/Personnelpositioningaddorupdata")
+    fun uploadLocation(@Body body: UploadLocation): Observable<UploadLocationResponse>
 
 }

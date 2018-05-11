@@ -2,7 +2,11 @@ package com.shtoone.aqm.network
 
 import android.util.Log
 import com.shtoone.aqm.base.BaseApplication
+import com.shtoone.aqm.base.BaseObject
 import com.shtoone.aqm.features.bigfileupload.ChunkBody
+import com.shtoone.aqm.features.bigfileupload.UploadChunkFileResponse
+import com.shtoone.aqm.features.location.UploadLocation
+import com.shtoone.aqm.features.location.UploadLocationResponse
 import com.shtoone.aqm.features.login.LoginResponse
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.functions.Function
@@ -57,29 +61,49 @@ class RetrofitManager {
                     ?.subscribe(observable)
         }
 
-        fun uploadChunkFile(path: String, body: ChunkBody, observable: Observers.LoginObserver) {
+
+        fun uploadLocation(body: UploadLocation, observable: Observers.LocationObserver) {
+            retrofit?.uploadLocation(body)
+                    ?.onErrorReturn(object : Function<Throwable, UploadLocationResponse> {
+                        //会忽略onError调用，不会将错误传递给观察者
+                        override fun apply(p0: Throwable): UploadLocationResponse? {
+                            //作为替代，它会发发射一个特殊的项并调用观察者的onCompleted方法(不回调onNext和onError)
+                            Log.e(TAG, ">>>login>>>>网络异常:" + p0)
+                            return null
+                        }
+                    })
+                    ?.subscribeOn(Schedulers.io())//IO线程订阅
+                    ?.observeOn(AndroidSchedulers.mainThread())//主线程回调
+                    ?.subscribe(observable)
+        }
+
+
+        fun uploadChunkFile(path: String, body: ChunkBody, observable: Observers.UploadChunkFileObserver) {
 
             var file = File(path)
             var builder = MultipartBody.Builder()
                     .setType(MultipartBody.FORM)//表单类型
-                    .addFormDataPart("fileName", body?.fileName)
+                    .addFormDataPart("uuid", body?.uuid)
                     .addFormDataPart("chunk", body?.chunk?.toString())
                     .addFormDataPart("chunks", body?.chunks?.toString())
+                    .addFormDataPart("fileType", "666")
 //                    .addFormDataPart("lat", "lat")
                     .addFormDataPart("lng", "lng")
                     .addFormDataPart("lat", "lat")
                     .addFormDataPart("address", "address")
-                    .addFormDataPart("username", BaseApplication.username)
+                    .addFormDataPart("userName", BaseApplication.userName)
                     .addFormDataPart("time", "2017-12-27 10:24:49")//表单类型
 
             var body = RequestBody.create(MediaType.parse("multipart/form-data"), file)
             builder.addFormDataPart("file", file.getName(), body)
             var parts = builder.build().parts()
 
-            retrofit?.uploadChunkFile(BaseApplication.sn,parts)
-                    ?.onErrorReturn(object : Function<Throwable, LoginResponse> {
+            retrofit?.uploadChunkFile(BaseApplication.sn, parts)
+                    ?.onErrorReturn(object : Function<Throwable, UploadChunkFileResponse> {
+                        //                    ?.onErrorReturn(object : Function<Throwable, BaseObject<String>> {
                         //会忽略onError调用，不会将错误传递给观察者
-                        override fun apply(p0: Throwable): LoginResponse? {
+                        override fun apply(p0: Throwable): UploadChunkFileResponse? {
+//                        override fun apply(p0: Throwable): BaseObject<String>? {
                             //作为替代，它会发发射一个特殊的项并调用观察者的onCompleted方法(不回调onNext和onError)
                             Log.e(TAG, ">>>login>>>>网络异常:" + p0)
                             return null
@@ -116,7 +140,6 @@ class RetrofitManager {
                 .client(okHttpClient)
                 .build()
                 .create(RetrofitService::class.java)//创建接口实例
-
     }
 
     /**

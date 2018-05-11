@@ -24,8 +24,14 @@ class ChunkInfo : DataSupport() {
      */
     var filePath = ""
 
+    /**
+     * 源文件名
+     */
+    var srcFileName = ""
+    var uuid = ""
+
     override fun toString(): String {
-        return "ChunkInfo(chunk=$chunk, chunks=$chunks, fileName='$fileName', filePath='$filePath')"
+        return "ChunkInfo(uuid=$uuid,srcFileName=$srcFileName, chunk=$chunk, chunks=$chunks, fileName='$fileName', filePath='$filePath')"
     }
 
 

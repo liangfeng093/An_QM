@@ -1,5 +1,6 @@
 package com.shtoone.aqm.main
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -13,18 +14,25 @@ import com.shtoone.aqm.features.login.LoginResponse
 import com.shtoone.aqm.network.Observers
 import com.shtoone.aqm.network.RetrofitManager
 import com.vondear.rxtools.RxLogTool
-import com.vondear.rxtools.RxZipTool
 import kotlinx.android.synthetic.main.activity_main.*
-import android.R.attr.data
 import android.app.Activity
+import android.content.pm.PackageManager
 import android.net.Uri
-import android.support.v4.app.FragmentActivity
+import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
 import android.util.Log
+import android.widget.Toast
+import com.amap.api.mapcore.util.fi
 import com.amap.api.mapcore.util.it
+import com.shtoone.aqm.base.BaseObject
 import com.shtoone.aqm.features.bigfileupload.ChunkBody
 import com.shtoone.aqm.features.bigfileupload.ChunkInfo
+import com.shtoone.aqm.features.bigfileupload.UploadChunkFileResponse
+import com.shtoone.aqm.features.location.LocationService
 import com.vondear.rxtools.RxFileTool
+import kotlinx.coroutines.experimental.launch
 import org.litepal.crud.DataSupport
+import org.litepal.crud.DataSupport.findFirst
 import java.io.*
 import java.util.*
 
@@ -36,8 +44,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-
-
         RetrofitManager.login(BaseApplication.sn, object : Observers.LoginObserver() {
             override fun onError(e: Throwable) {
                 super.onError(e)
@@ -46,7 +52,7 @@ class MainActivity : AppCompatActivity() {
             override fun onNext(t: LoginResponse) {
                 var response = t?.obj as LoginBean
                 response?.let {
-                    BaseApplication.username = it?.username
+                    BaseApplication.userName = it?.username
                 }
                 RxLogTool.e("===>response:" + response)
             }
@@ -86,19 +92,96 @@ class MainActivity : AppCompatActivity() {
 
         var tempPath = filesDir?.path + "/" + resources?.getString(R.string.file_temp)
         var filePath = File(path + "VID_20180509_143926.3gp")
-        customFile(filePath?.path, 5, tempPath)
 
-        var firstChunkInfo = DataSupport.findFirst(ChunkInfo::class.java)
-        Log.e(TAG, ">>>>>>>firstChunkInfo:" + firstChunkInfo)
-        firstChunkInfo?.let {
+        var chunkInfos = DataSupport.where("srcFileName = ?", "VID_20180509_143926.3gp")
+                .order("chunk asc")
+                .find(ChunkInfo::class.java)
+
+        if (chunkInfos?.size!! == 0) {
+            customFile(filePath?.path, 5, tempPath)
+        } else {
+            Log.e(TAG, ">>>>>>>文件已切割:")
+        }
+
+        Log.e(TAG, ">>>>>>>chunkInfos:" + chunkInfos)
+        if (chunkInfos?.size!! > 0) {
+            var index = 0
+            var isFinish = true
+            launch {
+                while (true) {
+                    if (index == chunkInfos?.size) {
+                        break
+                    }
+                    if (isFinish) {
+                        isFinish = false
+                        var chunkBody = ChunkBody()
+                        var it = chunkInfos?.get(index)
+                        chunkBody?.chunk = it?.chunk!!
+                        chunkBody?.chunks = it?.chunks!!
+                        chunkBody?.uuid = it?.uuid
+//                        chunkBody?.fileName = it?.fileName!!
+                        RetrofitManager.uploadChunkFile(it?.filePath, chunkBody, object : Observers.UploadChunkFileObserver() {
+                            override fun onComplete() {
+                                Log.e(TAG, ">>>>>>>uploadChunkFile_onComplete:")
+                            }
+
+                            override fun onError(e: Throwable) {
+                                super.onError(e)
+                                Log.e(TAG, ">>>>>>>uploadChunkFile---e:" + e)
+                            }
+
+                            override fun onNext(t: UploadChunkFileResponse) {
+//                        override fun onNext(t: BaseObject<String>) {
+                                Log.e(TAG, ">>>>>>>uploadChunkFilet:" + t)
+                                if ("5"?.equals(t?.success)) {
+                                    isFinish = true
+                                    index++
+                                }
+                            }
+                        })
+                    }
+                }
+            }
+
+        }
+        /*firstChunkInfos?.let {
             var chunkBody = ChunkBody()
             chunkBody?.chunk = it?.chunk!!
             chunkBody?.chunks = it?.chunks!!
             chunkBody?.fileName = it?.fileName!!
             RetrofitManager.uploadChunkFile(it?.filePath, chunkBody, Observers.LoginObserver())
+        }*/
+
+        if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            //申请WRITE_EXTERNAL_STORAGE权限
+            ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_REQUEST_CODE)//自定义的code
+        } else {
+            var intent = Intent(this@MainActivity, LocationService::class.java)
+//            startService(intent)
         }
+
     }
 
+    val LOCATION_REQUEST_CODE = 1001
+    val RECORD_AUDIO_REQUEST_CODE = 1002
+
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            LOCATION_REQUEST_CODE -> {
+                Log.e(TAG, "onRequestPermissionsResult")
+                var intent = Intent(this@MainActivity, LocationService::class.java)
+//                startService(intent)
+            }
+            RECORD_AUDIO_REQUEST_CODE -> {
+                Toast.makeText(this, "拿到录音权限", Toast.LENGTH_LONG).show()
+                Log.e(TAG, ">>>>>>>拿到录音权限:")
+            }
+        }
+    }
 
     /**
      * 当前文件的分片值(当前文件是第几个)
@@ -140,6 +223,7 @@ class MainActivity : AppCompatActivity() {
 //        var tempFilePath = tempPath + "/" + chunkInfo?.fileName
         Log.e(TAG, ">>>>>>>tempFilePath:" + tempFilePath)
         if (RxFileTool.initDirectory(tempFilePath)) {
+            var uuid = UUID.randomUUID()
             var inputStream: InputStream? = null//输入字节流
             var bis: BufferedInputStream? = null//输入缓冲流
             var bytes = ByteArray(1024)////每次读取文件的大小为1MB
@@ -155,13 +239,14 @@ class MainActivity : AppCompatActivity() {
                     Log.e(TAG, ">>>>>>>i:" + i)
                     var chunkInfo = ChunkInfo()
 
-                    var uuid = UUID.randomUUID()
-                    var targetFileName = tempFilePath + "/" + uuid
-//                    var targetFileName = tempFilePath + "/" + uuid + "-" + i
-                    chunkInfo?.fileName = uuid?.toString()!!
+//                    var targetFileName = tempFilePath + "/" + uuid
+                    var targetFileName = tempFilePath + "/" + srcFile?.name + "-" + i
+                    chunkInfo?.fileName = srcFile?.name + "-" + i
+                    chunkInfo?.uuid = uuid?.toString()!!
                     chunkInfo?.filePath = targetFileName
                     chunkInfo?.chunk = i?.toInt()
                     chunkInfo?.chunks = chunks?.toInt()
+                    chunkInfo?.srcFileName = srcFile?.name
                     chunkInfo?.save()//保存到数据库
                     Log.e(TAG, ">>>>>>>customFile_chunkInfo:" + "(" + i + ")" + chunkInfo)
 //                    Log.e(TAG, ">>>>>>>chunkInfo:" + "(" + "" + "" + ")" + chunkInfo)
