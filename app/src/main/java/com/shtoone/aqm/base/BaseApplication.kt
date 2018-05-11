@@ -72,6 +72,9 @@ class BaseApplication : LitePalApplication() {
 
         var prefStore: SecuredPreferenceStore? = null
 
+
+        var isOpenTimer = true
+
     }
 
     override fun onCreate() {

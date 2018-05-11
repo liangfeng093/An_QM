@@ -60,6 +60,8 @@ class LocationService : Service() {
             override fun onLocationChanged(p0: AMapLocation?) {
                 BaseApplication.latitude = "" + p0?.latitude
                 BaseApplication.longitude = "" + p0?.longitude
+                Log.e(TAG,">>>>>>>latitude:"+BaseApplication.latitude)
+                Log.e(TAG,">>>>>>>longitude:"+BaseApplication.longitude)
                 if (isUpdate) {
                     isUpdate = false
                     if (RxNetTool.isNetworkAvailable(this@LocationService)) {

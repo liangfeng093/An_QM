@@ -17,8 +17,8 @@ interface RetrofitService {
 
     companion object {
 
-//                                val BaseURL: String = "http://114.55.108.58:8086/SSMS/"//新外网
-        val BaseURL: String = "http://192.168.0.158:8080/jeecg/"//luo
+                                val BaseURL: String = "http://114.55.108.58:8086/SSMS/"//新外网
+//        val BaseURL: String = "http://192.168.0.158:8080/jeecg/"//luo
         val mp3Url = BaseURL + "Callupload/"
     }
 

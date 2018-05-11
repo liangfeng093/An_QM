@@ -48,6 +48,18 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
+
+        <!--高德地图 start-->
+        <meta-data
+            android:name="com.amap.api.v2.apikey"
+            android:value="e646ded74c1c0eb65d307c9ad32d4fbc">
+            //开发者申请的key
+        </meta-data>
+        <service android:name="com.amap.api.location.APSService"></service>
+        <!--高德地图 end-->
+
+
         <activity android:name="com.shtoone.aqm.main.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

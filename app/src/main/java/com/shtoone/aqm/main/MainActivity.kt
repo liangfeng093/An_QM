@@ -30,6 +30,8 @@ import com.shtoone.aqm.features.bigfileupload.ChunkInfo
 import com.shtoone.aqm.features.bigfileupload.UploadChunkFileResponse
 import com.shtoone.aqm.features.location.LocationService
 import com.vondear.rxtools.RxFileTool
+import com.vondear.rxtools.RxNetTool
+import com.vondear.rxtools.RxTimeTool
 import kotlinx.coroutines.experimental.launch
 import org.litepal.crud.DataSupport
 import org.litepal.crud.DataSupport.findFirst
@@ -104,7 +106,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         Log.e(TAG, ">>>>>>>chunkInfos:" + chunkInfos)
-        if (chunkInfos?.size!! > 0) {
+        if (false) {
+//        if (chunkInfos?.size!! > 0) {
             var index = 0
             var isFinish = true
             launch {
@@ -142,7 +145,6 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
-
         }
         /*firstChunkInfos?.let {
             var chunkBody = ChunkBody()
@@ -152,14 +154,28 @@ class MainActivity : AppCompatActivity() {
             RetrofitManager.uploadChunkFile(it?.filePath, chunkBody, Observers.LoginObserver())
         }*/
 
-        if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_COARSE_LOCATION)
+        /*if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_COARSE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
             //申请WRITE_EXTERNAL_STORAGE权限
             ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION,
                     Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_REQUEST_CODE)//自定义的code
         } else {
             var intent = Intent(this@MainActivity, LocationService::class.java)
-//            startService(intent)
+            startService(intent)
+        }*/
+
+        if (ContextCompat.checkSelfPermission(this!!, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            //申请WRITE_EXTERNAL_STORAGE权限
+            ActivityCompat.requestPermissions(this!!, arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_REQUEST_CODE)//自定义的code
+        } else {
+            var intent = Intent(this, LocationService::class.java)
+            if (BaseApplication.isOpenTimer) {
+                if (RxNetTool.isNetworkAvailable(this)) {
+                    this?.startService(intent)
+                }
+            }
         }
 
     }
@@ -168,17 +184,32 @@ class MainActivity : AppCompatActivity() {
     val RECORD_AUDIO_REQUEST_CODE = 1002
 
 
+    /* override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+         when (requestCode) {
+             LOCATION_REQUEST_CODE -> {
+                 Log.e(TAG, "onRequestPermissionsResult")
+                 var intent = Intent(this@MainActivity, LocationService::class.java)
+                 startService(intent)
+             }
+             RECORD_AUDIO_REQUEST_CODE -> {
+                 Toast.makeText(this, "拿到录音权限", Toast.LENGTH_LONG).show()
+                 Log.e(TAG, ">>>>>>>拿到录音权限:")
+             }
+         }
+     }*/
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        when (requestCode) {
-            LOCATION_REQUEST_CODE -> {
+        if (requestCode == LOCATION_REQUEST_CODE) {
+            if (RxNetTool.isNetworkAvailable(this)) {
                 Log.e(TAG, "onRequestPermissionsResult")
                 var intent = Intent(this@MainActivity, LocationService::class.java)
-//                startService(intent)
-            }
-            RECORD_AUDIO_REQUEST_CODE -> {
-                Toast.makeText(this, "拿到录音权限", Toast.LENGTH_LONG).show()
-                Log.e(TAG, ">>>>>>>拿到录音权限:")
+                if (BaseApplication.isOpenTimer) {
+                    startService(intent)
+                }
+            } else {
+//                Toast.makeText(this, resources?.getString(R.string.toast_network_exception1), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -224,6 +255,8 @@ class MainActivity : AppCompatActivity() {
         Log.e(TAG, ">>>>>>>tempFilePath:" + tempFilePath)
         if (RxFileTool.initDirectory(tempFilePath)) {
             var uuid = UUID.randomUUID()
+            var mills = RxTimeTool.getCurTimeMills()//时间戳
+            var time = RxTimeTool.milliseconds2String(mills)//时间
             var inputStream: InputStream? = null//输入字节流
             var bis: BufferedInputStream? = null//输入缓冲流
             var bytes = ByteArray(1024)////每次读取文件的大小为1MB
@@ -247,6 +280,7 @@ class MainActivity : AppCompatActivity() {
                     chunkInfo?.chunk = i?.toInt()
                     chunkInfo?.chunks = chunks?.toInt()
                     chunkInfo?.srcFileName = srcFile?.name
+                    chunkInfo?.cutTime = time
                     chunkInfo?.save()//保存到数据库
                     Log.e(TAG, ">>>>>>>customFile_chunkInfo:" + "(" + i + ")" + chunkInfo)
 //                    Log.e(TAG, ">>>>>>>chunkInfo:" + "(" + "" + "" + ")" + chunkInfo)
@@ -288,26 +322,6 @@ class MainActivity : AppCompatActivity() {
 //        return chunkInfo
     }
 
-
-/*
-    fun writeTo(file: File, chunkInfo: ChunkInfo) {
-        //创建随机流
-        var randomAccessFile = RandomAccessFile(file, "r")
-        //1KB缓冲区读取数据
-        var size = 1024 * 1
-        var tmp = ByteArray(size)
-        //从指定位置读取流
-        randomAccessFile?.seek((chunk * chunkLength).toLong())
-        randomAccessFile?.read(tmp, 0, 1024)//读出字节数组读出有效个字节个数(n)
-        var n = 0
-        var readLength = 0L//已读字节数(长度)
-        while (readLength <= chunkLength?.toLong() - 1024) {
-            n = randomAccessFile?.read(tmp, 0, 1024)//读出字节数组读出有效个字节个数(n)
-            readLength += 1024
-            //写入输出流
-            out?.write(tmp, 0, n)
-        }
-    }*/
 
     val TAG = this.javaClass.name
 

@@ -29,6 +29,10 @@ class ChunkInfo : DataSupport() {
      */
     var srcFileName = ""
     var uuid = ""
+    /**
+     * 分割时间
+     */
+    var cutTime = ""
 
     override fun toString(): String {
         return "ChunkInfo(uuid=$uuid,srcFileName=$srcFileName, chunk=$chunk, chunks=$chunks, fileName='$fileName', filePath='$filePath')"
