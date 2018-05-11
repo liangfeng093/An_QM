@@ -12,6 +12,8 @@ import com.vondear.rxtools.RxLogTool
 import com.vondear.rxtools.RxTool
 import devliving.online.securedpreferencestore.RecoveryHandler
 import devliving.online.securedpreferencestore.SecuredPreferenceStore
+import org.litepal.LitePalApplication
+import org.litepal.tablemanager.Connector
 import java.io.BufferedReader
 import java.io.FileReader
 import java.io.IOException
@@ -22,7 +24,8 @@ import java.security.KeyStore
  * Created by mzf on 2018/5/7.
  * Email:liangfeng093@gmail.com
  */
-class BaseApplication : Application() {
+class BaseApplication : LitePalApplication() {
+//class BaseApplication : Application() {
 
     companion object {
         /*******  后台配置  start   *******/
@@ -62,7 +65,8 @@ class BaseApplication : Application() {
         /*******  后台配置  end     *******/
 
         var sn = "AQMNo4"//和username的数字一致
-
+        var key = ""
+        var username = ""
 
         var prefStore: SecuredPreferenceStore? = null
 
@@ -96,6 +100,7 @@ class BaseApplication : Application() {
 
         RxLogTool.init(this)
 
+        var db = Connector.getDatabase()//获取数据库实例
 
     }
 

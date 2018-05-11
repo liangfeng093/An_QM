@@ -61,4 +61,6 @@ dependencies {
     compile 'com.tencent.bugly:nativecrashreport:latest.release'
     //sp加密库
     compile 'online.devliving:securedpreferencestore:0.5.1'
+    //数据库
+    compile 'org.litepal.android:core:1.6.1'
 }

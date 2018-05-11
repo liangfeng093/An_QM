@@ -21,9 +21,12 @@ import android.net.Uri
 import android.support.v4.app.FragmentActivity
 import android.util.Log
 import com.amap.api.mapcore.util.it
+import com.shtoone.aqm.features.bigfileupload.ChunkBody
 import com.shtoone.aqm.features.bigfileupload.ChunkInfo
 import com.vondear.rxtools.RxFileTool
+import org.litepal.crud.DataSupport
 import java.io.*
+import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -42,6 +45,9 @@ class MainActivity : AppCompatActivity() {
 
             override fun onNext(t: LoginResponse) {
                 var response = t?.obj as LoginBean
+                response?.let {
+                    BaseApplication.username = it?.username
+                }
                 RxLogTool.e("===>response:" + response)
             }
         })
@@ -81,6 +87,16 @@ class MainActivity : AppCompatActivity() {
         var tempPath = filesDir?.path + "/" + resources?.getString(R.string.file_temp)
         var filePath = File(path + "VID_20180509_143926.3gp")
         customFile(filePath?.path, 5, tempPath)
+
+        var firstChunkInfo = DataSupport.findFirst(ChunkInfo::class.java)
+        Log.e(TAG, ">>>>>>>firstChunkInfo:" + firstChunkInfo)
+        firstChunkInfo?.let {
+            var chunkBody = ChunkBody()
+            chunkBody?.chunk = it?.chunk!!
+            chunkBody?.chunks = it?.chunks!!
+            chunkBody?.fileName = it?.fileName!!
+            RetrofitManager.uploadChunkFile(it?.filePath, chunkBody, Observers.LoginObserver())
+        }
     }
 
 
@@ -100,16 +116,16 @@ class MainActivity : AppCompatActivity() {
     /**
      * 分割文件
      */
-    fun customFile(srcPath: String, chunkSize: Int, targetFolderPath: String): ChunkInfo? {
+    fun customFile(srcPath: String, chunkSize: Int, targetFolderPath: String) {
+//    fun customFile(srcPath: String, chunkSize: Int, targetFolderPath: String): ChunkInfo? {
 //    fun customFile(chunkInfo: ChunkInfo) {
-        if (srcPath?.isEmpty() || targetFolderPath?.isEmpty()) {
+        /*if (srcPath?.isEmpty() || targetFolderPath?.isEmpty()) {
             return null
-        }
+        }*/
         var tempPath = filesDir?.path + "/" + resources?.getString(R.string.file_temp)
         if (!RxFileTool.fileExists(tempPath)) {//文件夹不存在
             RxFileTool.initDirectory(tempPath)
         }
-        var chunkInfo = ChunkInfo()
         var srcFile = File(srcPath)//源文件
         var srcSize = srcFile?.length()//源文件大小
         var targetFileSize = chunkLength * chunkSize//分片文件大小
@@ -121,7 +137,6 @@ class MainActivity : AppCompatActivity() {
         }
         //生成缓存文件jia
         var tempFilePath = tempPath + "/" + srcFile?.name?.substring(0, srcFile?.name?.length!! - 4)
-        chunkInfo?.fileName = srcFile?.name?.substring(0, srcFile?.name?.length!! - 4)!!
 //        var tempFilePath = tempPath + "/" + chunkInfo?.fileName
         Log.e(TAG, ">>>>>>>tempFilePath:" + tempFilePath)
         if (RxFileTool.initDirectory(tempFilePath)) {
@@ -138,8 +153,19 @@ class MainActivity : AppCompatActivity() {
                 for (i in 1..chunks) {//1 到 chunks
 //                for (i in 0 until chunks) {//0 到 chunks
                     Log.e(TAG, ">>>>>>>i:" + i)
-                    var targetFileName = tempFilePath + "/" + chunkInfo?.fileName + "-" + i
-                    Log.e(TAG, ">>>>>>>targetFileName:" + targetFileName)
+                    var chunkInfo = ChunkInfo()
+
+                    var uuid = UUID.randomUUID()
+                    var targetFileName = tempFilePath + "/" + uuid
+//                    var targetFileName = tempFilePath + "/" + uuid + "-" + i
+                    chunkInfo?.fileName = uuid?.toString()!!
+                    chunkInfo?.filePath = targetFileName
+                    chunkInfo?.chunk = i?.toInt()
+                    chunkInfo?.chunks = chunks?.toInt()
+                    chunkInfo?.save()//保存到数据库
+                    Log.e(TAG, ">>>>>>>customFile_chunkInfo:" + "(" + i + ")" + chunkInfo)
+//                    Log.e(TAG, ">>>>>>>chunkInfo:" + "(" + "" + "" + ")" + chunkInfo)
+//                    Log.e(TAG, ">>>>>>>targetFileName:" + targetFileName)
                     var fos = FileOutputStream(targetFileName)
                     var bos = BufferedOutputStream(fos)
                     var count = 0
@@ -149,9 +175,9 @@ class MainActivity : AppCompatActivity() {
                         bos?.write(bytes, 0, len)
                         count += len
 
-                        if (i !=chunks && count >= targetFileSize) {
+                        if (i != chunks && count >= targetFileSize) {
                             break
-                        } else if(i ==chunks && count >= lastSize) {
+                        } else if (i == chunks && count >= lastSize) {
                             break
                         }
                     }
@@ -159,8 +185,6 @@ class MainActivity : AppCompatActivity() {
                     bos.close()
                     fos.close()
                 }
-
-
             } catch (e: Exception) {
                 Log.e(TAG, ">>>>>>>EEEEEEE1:" + e)
                 e?.stackTrace?.forEach {
@@ -174,23 +198,9 @@ class MainActivity : AppCompatActivity() {
             }
 
         }
-        /* if (!RxFileTool.fileExists(tempPath)) {//文件夹不存在
-             RxFileTool.initDirectory(tempPath)
-         } else {//存在创建临时文件夹
-             var tempFilePath = tempPath + "/" + chunkInfo?.fileName
- //            var tempFilePath = filesDir?.path + "/" + chunkInfo?.fileName + "-" + chunkInfo?.chunk
-             if (RxFileTool.fileExists(tempFilePath)) {//存在直接上传这个文件
-                 if (RxFileTool.initDirectory(tempFilePath)) {//创建存储分片文件的文件夹
-                     //
-                 }
-
-             } else {
-
-             }
-
-         }*/
         Log.e(TAG, ">>>>>>>文件切割完毕:")
-        return chunkInfo
+//        chunkInfo?.save()//保存到数据库
+//        return chunkInfo
     }
 
 

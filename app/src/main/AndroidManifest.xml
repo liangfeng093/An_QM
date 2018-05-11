@@ -46,6 +46,9 @@
             android:theme="@android:style/Theme.Translucent" />
         <!--******************  bugly热更新 end************************-->
 
+        <activity android:name=".main.MediaRecorderActivity"
+            />
+
     </application>
 
 </manifest>

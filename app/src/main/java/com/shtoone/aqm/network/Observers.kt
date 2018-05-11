@@ -32,5 +32,6 @@ open class Observers {
     }
 
     open class LoginObserver : BaseObserver<LoginResponse>() {}
+    open class UploadChunkFileObserver : BaseObserver<LoginResponse>() {}
 
 }
