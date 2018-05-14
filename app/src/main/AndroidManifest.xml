@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.shtoone.aqm">
+
     <uses-permission android:name="android.permission.CAMERA" />
 
     <uses-feature android:name="android.hardware.camera" />
@@ -89,6 +90,7 @@
         <activity android:name=".main.MediaRecorderActivity" />
 
         <service android:name=".features.location.LocationService" />
+        <service android:name=".features.news.UnknowService" />
     </application>
 
 </manifest>

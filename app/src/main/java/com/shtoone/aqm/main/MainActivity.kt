@@ -16,6 +16,7 @@ import com.shtoone.aqm.network.RetrofitManager
 import com.vondear.rxtools.RxLogTool
 import kotlinx.android.synthetic.main.activity_main.*
 import android.app.Activity
+import android.content.ContentValues
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.support.v4.app.ActivityCompat
@@ -29,10 +30,15 @@ import com.shtoone.aqm.features.bigfileupload.ChunkBody
 import com.shtoone.aqm.features.bigfileupload.ChunkInfo
 import com.shtoone.aqm.features.bigfileupload.UploadChunkFileResponse
 import com.shtoone.aqm.features.location.LocationService
+import com.shtoone.aqm.features.news.UnknowService
+import com.shtoone.aqm.interfaces.Actions
+import com.shtoone.aqm.interfaces.Actions.Companion.MARK_TG
+import com.shtoone.aqm.interfaces.Actions.Companion.TCR_STATUS_TG
 import com.vondear.rxtools.RxFileTool
 import com.vondear.rxtools.RxNetTool
 import com.vondear.rxtools.RxTimeTool
 import kotlinx.coroutines.experimental.launch
+import org.greenrobot.eventbus.Subscribe
 import org.litepal.crud.DataSupport
 import org.litepal.crud.DataSupport.findFirst
 import java.io.*
@@ -57,31 +63,15 @@ class MainActivity : AppCompatActivity() {
                     BaseApplication.userName = it?.username
                 }
                 RxLogTool.e("===>response:" + response)
+                var intent = Intent(this@MainActivity, UnknowService::class.java)
+                startService(intent)
             }
         })
 
 
-        btn_shock?.setOnClickListener {
-            var vibrator = this@MainActivity?.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            vibrator?.vibrate(5 * 1000)
-        }
 
 
-        btn_video?.setOnClickListener {
-            var tempPath = filesDir?.path + "/" + resources?.getString(R.string.file_temp)
-
-            if (!RxFileTool.fileExists(tempPath)) {
-                RxFileTool.initDirectory(tempPath)
-            }
-            var uri = Uri.fromFile(File(tempPath))//设置视频录制保存地址的uri
-            var intent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
-            //设置视频录制的最长时间
-            intent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 30)
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, uri)//设置视频录制保存地址的uri
-            //设置视频录制的画质
-            intent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 1)
-            startActivityForResult(intent, VIDEO_WITH_CAMERA);
-        }
+        initListener()
 //        RxZipTool.fileToZip(resources)
         var path = "" + RxFileTool.getRootPath() + "/DCIM/Camera/"
         var file = File(path)
@@ -119,6 +109,8 @@ class MainActivity : AppCompatActivity() {
                         isFinish = false
                         var chunkBody = ChunkBody()
                         var it = chunkInfos?.get(index)
+
+
                         chunkBody?.chunk = it?.chunk!!
                         chunkBody?.chunks = it?.chunks!!
                         chunkBody?.uuid = it?.uuid
@@ -137,6 +129,9 @@ class MainActivity : AppCompatActivity() {
 //                        override fun onNext(t: BaseObject<String>) {
                                 Log.e(TAG, ">>>>>>>uploadChunkFilet:" + t)
                                 if ("5"?.equals(t?.success)) {
+                                    var values = ContentValues()
+                                    values?.put("isUploadSuccess", true)
+
                                     isFinish = true
                                     index++
                                 }
@@ -146,23 +141,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        /*firstChunkInfos?.let {
-            var chunkBody = ChunkBody()
-            chunkBody?.chunk = it?.chunk!!
-            chunkBody?.chunks = it?.chunks!!
-            chunkBody?.fileName = it?.fileName!!
-            RetrofitManager.uploadChunkFile(it?.filePath, chunkBody, Observers.LoginObserver())
-        }*/
-
-        /*if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_COARSE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            //申请WRITE_EXTERNAL_STORAGE权限
-            ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION,
-                    Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_REQUEST_CODE)//自定义的code
-        } else {
-            var intent = Intent(this@MainActivity, LocationService::class.java)
-            startService(intent)
-        }*/
 
         if (ContextCompat.checkSelfPermission(this!!, Manifest.permission.ACCESS_COARSE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -172,32 +150,42 @@ class MainActivity : AppCompatActivity() {
         } else {
             var intent = Intent(this, LocationService::class.java)
             if (BaseApplication.isOpenTimer) {
-                if (RxNetTool.isNetworkAvailable(this)) {
-                    this?.startService(intent)
+                if (BaseApplication.isOpenLocationService) {
+                    if (RxNetTool.isNetworkAvailable(this)) {
+                        this?.startService(intent)
+                    }
                 }
             }
         }
 
     }
 
+    private fun initListener() {
+        btn_shock?.setOnClickListener {
+            var vibrator = this@MainActivity?.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            vibrator?.vibrate(5 * 1000)
+        }
+
+
+        btn_video?.setOnClickListener {
+            var tempPath = filesDir?.path + "/" + resources?.getString(R.string.file_temp)
+
+            if (!RxFileTool.fileExists(tempPath)) {
+                RxFileTool.initDirectory(tempPath)
+            }
+            var uri = Uri.fromFile(File(tempPath))//设置视频录制保存地址的uri
+            var intent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
+            //设置视频录制的最长时间
+            intent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 30)
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, uri)//设置视频录制保存地址的uri
+            //设置视频录制的画质
+            intent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 1)
+            startActivityForResult(intent, VIDEO_WITH_CAMERA);
+        }
+    }
+
     val LOCATION_REQUEST_CODE = 1001
     val RECORD_AUDIO_REQUEST_CODE = 1002
-
-
-    /* override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-         when (requestCode) {
-             LOCATION_REQUEST_CODE -> {
-                 Log.e(TAG, "onRequestPermissionsResult")
-                 var intent = Intent(this@MainActivity, LocationService::class.java)
-                 startService(intent)
-             }
-             RECORD_AUDIO_REQUEST_CODE -> {
-                 Toast.makeText(this, "拿到录音权限", Toast.LENGTH_LONG).show()
-                 Log.e(TAG, ">>>>>>>拿到录音权限:")
-             }
-         }
-     }*/
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -206,8 +194,17 @@ class MainActivity : AppCompatActivity() {
                 Log.e(TAG, "onRequestPermissionsResult")
                 var intent = Intent(this@MainActivity, LocationService::class.java)
                 if (BaseApplication.isOpenTimer) {
+                    if (BaseApplication.isOpenLocationService) {
+                        if (RxNetTool.isNetworkAvailable(this)) {
+                            this?.startService(intent)
+                        }
+                    }
+                }
+/*
+                if (BaseApplication.isOpenTimer) {
                     startService(intent)
                 }
+*/
             } else {
 //                Toast.makeText(this, resources?.getString(R.string.toast_network_exception1), Toast.LENGTH_LONG).show()
             }
@@ -339,6 +336,33 @@ class MainActivity : AppCompatActivity() {
             e.printStackTrace()
         }
 
+    }
+
+    var currentTcrStatus = TCR_STATUS_TG
+    var currentMark = MARK_TG
+
+
+    @Subscribe
+    fun changeStatus(event: ChangeStatusEvent) {
+        Log.e(TAG, "***********>>>>>>>event?.tcrStatus:" + event?.tcrStatus)
+        when (event?.tcrStatus) {
+            Actions.TCR_STATUS_MAN -> {
+                BaseApplication.lastCallLastMp3Url = BaseApplication.singleCallLastMp3Url
+                currentTcrStatus = Actions.TCR_STATUS_MAN
+                currentMark = Actions.MARK_MAN
+            }
+            Actions.TCR_STATUS_TEMP_TG -> {
+                BaseApplication.lastCallLastMp3Url = BaseApplication.TempTgCallLastMp3Url
+                currentTcrStatus = Actions.TCR_STATUS_TEMP_TG
+                currentMark = Actions.MARK_TEMP_TG
+            }
+            Actions.TCR_STATUS_TG -> {
+                BaseApplication.lastCallLastMp3Url = BaseApplication.TgCallLastMp3Url
+                currentTcrStatus = Actions.TCR_STATUS_TG
+                currentMark = Actions.MARK_TG
+            }
+        }
+        Log.e(TAG, "***********>>>>>>>lastCallLastMp3Url:" + BaseApplication.lastCallLastMp3Url)
     }
 
 

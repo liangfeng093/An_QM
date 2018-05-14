@@ -69,11 +69,25 @@ class BaseApplication : LitePalApplication() {
         var userName = ""
         var latitude = ""//纬度，纬度取值最大是90
         var longitude = ""//经度，经度取值最大是180
-
+        var address = ""//安全帽当前位置
         var prefStore: SecuredPreferenceStore? = null
+
+        var singleCallLastMp3Url = ""
+        var otherUserName = ""
+        var otherRealName = ""
+        var lastCallLastMp3Url = ""
+        var TempTgCallLastMp3Url = ""
+        var tempTeamName = ""
+        var tempTeamCode = ""
+        var TgCallLastMp3Url = ""
+        var teamName = ""
+        var teamCode = ""
+        var noticeCallLastMp3Url = ""
+        var trainCallLastMp3Url = ""
 
 
         var isOpenTimer = true
+        var isOpenLocationService = false
 
     }
 

@@ -5,8 +5,11 @@ import com.shtoone.aqm.features.bigfileupload.UploadChunkFileResponse
 import com.shtoone.aqm.features.location.UploadLocation
 import com.shtoone.aqm.features.location.UploadLocationResponse
 import com.shtoone.aqm.features.login.LoginResponse
+import com.shtoone.aqm.features.news.RequestNotReceive
+import com.shtoone.aqm.features.news.UnknowVoiceInfo
 import io.reactivex.Observable
 import okhttp3.MultipartBody
+import okhttp3.ResponseBody
 import retrofit2.http.*
 
 /**
@@ -17,8 +20,8 @@ interface RetrofitService {
 
     companion object {
 
-                                val BaseURL: String = "http://114.55.108.58:8086/SSMS/"//新外网
-//        val BaseURL: String = "http://192.168.0.158:8080/jeecg/"//luo
+        val BaseURL: String = "http://114.55.108.58:8086/SSMS/"//新外网
+        //        val BaseURL: String = "http://192.168.0.158:8080/jeecg/"//luo
         val mp3Url = BaseURL + "Callupload/"
     }
 
@@ -46,5 +49,24 @@ interface RetrofitService {
      */
     @POST("rest/app/SystemController/Personnelpositioningaddorupdata")
     fun uploadLocation(@Body body: UploadLocation): Observable<UploadLocationResponse>
+
+    /**
+     *  小幺鸡:聊天窗口记录查询
+     *  1.获取通知或培训(未接收)
+     */
+//    @POST("rest/SSMSTeamCallRecordController/sendCallToUserOnTalk/{key}.json")
+//    fun getNotReceive(@Path("key") key: String, @Body body: RequestNotReceive): Observable<FindCallRecordsResponseBean>
+
+    /**
+     * 获取当前帽子未接收消息的列表
+     */
+    @GET("rest/app/SystemController/getCallRecordByUser")
+    fun getVoiceInfo(@Query("username") username: String): Observable<UnknowVoiceInfo>
+
+    /**
+     * 语音通知已播放
+     */
+    @GET("rest/app/SystemController/updateCall")
+    fun infoReceived(@Query("tcrId") tcrId: String): Observable<ResponseBody>
 
 }

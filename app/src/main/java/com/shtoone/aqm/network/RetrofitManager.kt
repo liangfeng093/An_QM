@@ -8,6 +8,7 @@ import com.shtoone.aqm.features.bigfileupload.UploadChunkFileResponse
 import com.shtoone.aqm.features.location.UploadLocation
 import com.shtoone.aqm.features.location.UploadLocationResponse
 import com.shtoone.aqm.features.login.LoginResponse
+import com.shtoone.aqm.features.news.UnknowVoiceInfo
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.functions.Function
 import io.reactivex.schedulers.Schedulers
@@ -77,6 +78,36 @@ class RetrofitManager {
                     ?.subscribe(observable)
         }
 
+        fun getVoiceInfo(userName: String, observable: Observers.VoiceInfoObserver) {
+            retrofit?.getVoiceInfo(userName)
+                    ?.onErrorReturn(object : Function<Throwable, UnknowVoiceInfo> {
+                        //会忽略onError调用，不会将错误传递给观察者
+                        override fun apply(p0: Throwable): UnknowVoiceInfo? {
+                            //作为替代，它会发发射一个特殊的项并调用观察者的onCompleted方法(不回调onNext和onError)
+                            Log.e(TAG, ">>>login>>>>网络异常:" + p0)
+                            return null
+                        }
+                    })
+                    ?.subscribeOn(Schedulers.io())//IO线程订阅
+                    ?.observeOn(AndroidSchedulers.mainThread())//主线程回调
+                    ?.subscribe(observable)
+        }
+
+        fun infoReceived(userName: String, observable: Observers.NetworkObserver) {
+            retrofit?.infoReceived(userName)
+                    ?.onErrorReturn(object : Function<Throwable, ResponseBody> {
+                        //会忽略onError调用，不会将错误传递给观察者
+                        override fun apply(p0: Throwable): ResponseBody? {
+                            //作为替代，它会发发射一个特殊的项并调用观察者的onCompleted方法(不回调onNext和onError)
+                            Log.e(TAG, ">>>login>>>>网络异常:" + p0)
+                            return null
+                        }
+                    })
+                    ?.subscribeOn(Schedulers.io())//IO线程订阅
+                    ?.observeOn(AndroidSchedulers.mainThread())//主线程回调
+                    ?.subscribe(observable)
+        }
+
 
         fun uploadChunkFile(path: String, body: ChunkBody, observable: Observers.UploadChunkFileObserver) {
 
@@ -88,9 +119,9 @@ class RetrofitManager {
                     .addFormDataPart("chunks", body?.chunks?.toString())
                     .addFormDataPart("fileType", "666")
 //                    .addFormDataPart("lat", "lat")
-                    .addFormDataPart("lng", "lng")
-                    .addFormDataPart("lat", "lat")
-                    .addFormDataPart("address", "address")
+                    .addFormDataPart("lng", BaseApplication.longitude)
+                    .addFormDataPart("lat", BaseApplication.latitude)
+                    .addFormDataPart("address", BaseApplication.address)
                     .addFormDataPart("userName", BaseApplication.userName)
                     .addFormDataPart("time", "2017-12-27 10:24:49")//表单类型
 

@@ -34,6 +34,11 @@ class ChunkInfo : DataSupport() {
      */
     var cutTime = ""
 
+    /**
+     * 是否上传成功
+     */
+    var isUploadSuccess = false
+
     override fun toString(): String {
         return "ChunkInfo(uuid=$uuid,srcFileName=$srcFileName, chunk=$chunk, chunks=$chunks, fileName='$fileName', filePath='$filePath')"
     }
